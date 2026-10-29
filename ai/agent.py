@@ -183,6 +183,7 @@ def run(con, keys: list[str] | None = None, only_user: str | None = None,
     """Analyse new listings for every user. Returns {user_id: [report, ...]}."""
     ensure_schema(con)
     out: dict[str, list[dict]] = {}
+    notices: dict[str, str] = {}
     for user in load_users():
         if only_user and user["id"] != only_user:
             continue
@@ -215,10 +216,21 @@ def run(con, keys: list[str] | None = None, only_user: str | None = None,
                 out[user["id"]].append(report)
             except otari.BudgetExceeded as e:
                 log(f"[{user['id']}] budget reached, stopping for this user: {e}")
+                waiting = len(candidates(con, user, 50))
+                notices[user["id"]] = budget_notice(user, waiting)
                 break
             except Exception as e:  # one bad listing must not stop the others
                 log(f"[{user['id']}] error on {row['title'][:50]}: {e}")
+    out["_notices"] = notices  # type: ignore[assignment]
     return out
+
+
+def budget_notice(user: dict, waiting: int) -> str:
+    if user["language"].lower().startswith("ja"):
+        return (f"⏸ 本日のAI分析の予算に達しました（{user['label']}）。"
+                f"日本時間の朝9時（UTC 0時）まで分析を止めます。未分析の新着 {waiting}件。")
+    return (f"⏸ Daily AI budget reached for {user['label']}. Analysis is paused until "
+            f"00:00 UTC (09:00 JST). {waiting} new listings are waiting.")
 
 
 def format_report(user: dict, r: dict) -> str:

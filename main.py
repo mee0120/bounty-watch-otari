@@ -239,9 +239,28 @@ def cmd_list() -> None:
 
 # ---------- AI分析（Otari） ----------
 
+def _ai_send(u: dict, text: str) -> None:
+    if u.get("notify") == "line":
+        notifier.send(text)
+    elif u.get("notify") == "telegram":
+        from ai import telegram
+        telegram.send(text, u.get("telegram_chat_id"))
+    else:
+        print(text)
+
+
 def _ai_deliver(results) -> None:
     from ai import agent
     users = {u["id"]: u for u in agent.load_users()}
+    notices = results.pop("_notices", {})
+    con = db.connect()
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    for uid, text in notices.items():
+        k = f"budget_notice:{uid}:{today}"
+        if db.get_meta(con, k) != "1":  # at most one notice per user per day
+            _ai_send(users[uid], text)
+            db.set_meta(con, k, "1")
+            con.commit()
     for uid, reports in results.items():
         u = users[uid]
         if not reports:
@@ -252,13 +271,7 @@ def _ai_deliver(results) -> None:
         cost = sum(r.get("_cost", 0) for r in reports)
         body = "\n\n".join(agent.format_report(u, r) for r in reports)
         text = f"{head}\n\n{body}\n\n(Otari cost ${cost:.4f})"
-        if u.get("notify") == "line":
-            notifier.send(text)
-        elif u.get("notify") == "telegram":
-            from ai import telegram
-            telegram.send(text, u.get("telegram_chat_id"))
-        else:
-            print(text)
+        _ai_send(u, text)
 
 
 def cmd_ai() -> None:
