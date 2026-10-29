@@ -1,0 +1,11 @@
+[Unit]
+Description=bounty-watch read-only MCP server (for Otari)
+After=network.target
+
+[Service]
+WorkingDirectory=/root/bounty_watch
+ExecStart=/root/bounty_watch/.venv/bin/python -m ai.mcp_server
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

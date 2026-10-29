@@ -1,3 +1,5 @@
+> **Otari AI analyst (MozFest Devs Wilding):** see [OTARI.md](OTARI.md) for the per-user AI analyst built on the Otari gateway with open-weight models.
+
 # バウンティ監視Bot（第1段階）
 
 Superteam Earn と GitHub上の懸賞金付きIssue（Algora系）を定期的に集め、

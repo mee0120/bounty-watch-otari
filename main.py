@@ -6,6 +6,9 @@
   python3 main.py list         # 公開中の案件をスコア順に表示（確認用）
   python3 main.py ignore <URL|タイトルの一部>  # 対象外の案件を今後表示しない
   python3 main.py test-notify  # LINE通知のテスト
+  python3 main.py ai [user-id]  # 新着案件をユーザーごとにAI分析して通知（Otari経由）
+  python3 main.py ai-one <URL|キー> [user-id]  # 1件だけAI分析（デモ用）
+  python3 main.py ai-log       # これまでのAI分析とコストを表示
 """
 import sys
 import traceback
@@ -234,10 +237,74 @@ def cmd_list() -> None:
         print()
 
 
+# ---------- AI分析（Otari） ----------
+
+def _ai_deliver(results) -> None:
+    from ai import agent
+    users = {u["id"]: u for u in agent.load_users()}
+    for uid, reports in results.items():
+        u = users[uid]
+        if not reports:
+            continue
+        ja = u["language"].lower().startswith("ja")
+        head = (f"🤖 AI分析 {len(reports)}件（{u['label']}）" if ja
+                else f"🤖 AI analysis, {len(reports)} new ({u['label']})")
+        cost = sum(r.get("_cost", 0) for r in reports)
+        body = "\n\n".join(agent.format_report(u, r) for r in reports)
+        text = f"{head}\n\n{body}\n\n(Otari cost ${cost:.4f})"
+        if u.get("notify") == "line":
+            notifier.send(text)
+        else:
+            print(text)
+
+
+def cmd_ai() -> None:
+    from ai import agent
+    con = db.connect()
+    only = sys.argv[2] if len(sys.argv) > 2 else None
+    _ai_deliver(agent.run(con, only_user=only))
+
+
+def cmd_ai_one() -> None:
+    from ai import agent
+    if len(sys.argv) < 3:
+        print("使い方: main.py ai-one <URL|キー> [user-id]")
+        sys.exit(1)
+    con = db.connect()
+    agent.ensure_schema(con)
+    t = sys.argv[2]
+    row = con.execute("SELECT key FROM bounties WHERE (url=? OR key=? OR title LIKE ?) ORDER BY (status='open') DESC, (deadline > datetime('now')) DESC, first_seen DESC",
+                      (t, t, f"%{t}%")).fetchone()
+    if not row:
+        print("一致する案件がありません")
+        sys.exit(1)
+    only = sys.argv[3] if len(sys.argv) > 3 else None
+    con.execute("DELETE FROM ai_reports WHERE key=?" + (" AND user_id=?" if only else ""),
+                (row["key"], only) if only else (row["key"],))
+    con.commit()
+    _ai_deliver(agent.run(con, keys=[row["key"]], only_user=only, force=True))
+
+
+def cmd_ai_log() -> None:
+    from ai import agent
+    con = db.connect()
+    agent.ensure_schema(con)
+    rows = con.execute("""SELECT a.*, b.title FROM ai_reports a JOIN bounties b
+                          ON b.key=a.key ORDER BY a.created_at DESC LIMIT 30""").fetchall()
+    total = 0.0
+    for r in rows:
+        total += r["cost_usd"] or 0
+        print(f"{r['created_at']} {r['user_id']:7} {r['stage']:7} {r['verdict']:5} "
+              f"fit={r['fit']:<3} ${r['cost_usd']:.4f} fb={r['fallback']} "
+              f"{r['models']} | {r['title'][:50]}")
+    print(f"total ${total:.4f}")
+
+
 def main() -> None:
     cmd = sys.argv[1] if len(sys.argv) > 1 else "run"
     commands = {"run": cmd_run, "digest": cmd_digest, "list": cmd_list,
-                "ignore": cmd_ignore,
+                "ignore": cmd_ignore, "ai": cmd_ai, "ai-one": cmd_ai_one,
+                "ai-log": cmd_ai_log,
                 "test-notify": lambda: notifier.send("バウンティ監視Bot: 通知テストです")}
     if cmd not in commands:
         print(__doc__)

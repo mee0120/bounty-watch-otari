@@ -1,0 +1,50 @@
+[
+  {
+    "id": "user-a",
+    "label": "Crypto builder (Japanese)",
+    "language": "Japanese",
+    "key_env": "OTARI_KEY_A",
+    "interests": "crypto and web3 hackathons, bounties and grants; trading bots; Solana, Bitcoin Cash, EVM chains; remote online events",
+    "avoid": "in-person only events, pure marketing or social-media content, events limited to students or a single country other than Japan",
+    "min_reward_usd": 300,
+    "notify": "line",
+    "max_items_per_run": 3,
+    "weekly_hours": 15,
+    "commitments": [
+      {
+        "event": "BCH BLAZE 2026 (build week)",
+        "start": "2026-11-14",
+        "end": "2026-11-22"
+      },
+      {
+        "event": "UGREEN AI NAS hackathon finals (if selected)",
+        "start": "2026-11-22",
+        "end": "2026-11-30"
+      },
+      {
+        "event": "Codegeist 2026",
+        "start": "2026-12-01",
+        "end": "2026-12-22"
+      }
+    ]
+  },
+  {
+    "id": "user-b",
+    "label": "AI tools developer (English)",
+    "language": "English",
+    "key_env": "OTARI_KEY_B",
+    "interests": "AI agents, LLM tooling, open-source developer tools, productivity apps",
+    "avoid": "crypto-only events, design-only or content-only bounties",
+    "min_reward_usd": 500,
+    "notify": "stdout",
+    "max_items_per_run": 2,
+    "weekly_hours": 8,
+    "commitments": [
+      {
+        "event": "Mozilla Otari hackathon build",
+        "start": "2026-10-28",
+        "end": "2026-11-11"
+      }
+    ]
+  }
+]
