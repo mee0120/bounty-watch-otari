@@ -36,14 +36,14 @@
     "interests": "AI agents, LLM tooling, open-source developer tools, productivity apps",
     "avoid": "crypto-only events, design-only or content-only bounties",
     "min_reward_usd": 500,
-    "notify": "stdout",
+    "notify": "telegram",
     "max_items_per_run": 2,
     "weekly_hours": 8,
     "commitments": [
       {
-        "event": "Mozilla Otari hackathon build",
-        "start": "2026-10-28",
-        "end": "2026-11-11"
+        "event": "Codegeist 2026 (Atlassian Forge app)",
+        "start": "2026-11-01",
+        "end": "2026-12-22"
       }
     ]
   }

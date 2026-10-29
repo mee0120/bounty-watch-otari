@@ -103,10 +103,15 @@ def submission_trend(listing_url: str) -> dict:
     out = {"found": True, "title": b["title"], "deadline": b["deadline"],
            "current": b["submissions"], "winners": b["winners"],
            "snapshots": pts[-12:]}
-    if len(pts) >= 2 and b["deadline"]:
-        t0 = datetime.fromisoformat(pts[0][0])
-        t1 = datetime.fromisoformat(pts[-1][0])
-        days = max((t1 - t0).total_seconds() / 86400, 0.04)
+    span = 0.0
+    if len(pts) >= 2:
+        span = (datetime.fromisoformat(pts[-1][0])
+                - datetime.fromisoformat(pts[0][0])).total_seconds() / 86400
+    out["history_days"] = round(span, 1)
+    if span < 1:
+        out["note"] = "less than one day of history: no growth projection yet"
+    elif b["deadline"]:
+        days = span
         per_day = (pts[-1][1] - pts[0][1]) / days
         left = (datetime.fromisoformat(b["deadline"]) - datetime.now(timezone.utc)
                 ).total_seconds() / 86400

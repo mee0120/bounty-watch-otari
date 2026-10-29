@@ -254,6 +254,9 @@ def _ai_deliver(results) -> None:
         text = f"{head}\n\n{body}\n\n(Otari cost ${cost:.4f})"
         if u.get("notify") == "line":
             notifier.send(text)
+        elif u.get("notify") == "telegram":
+            from ai import telegram
+            telegram.send(text, u.get("telegram_chat_id"))
         else:
             print(text)
 
