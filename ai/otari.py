@@ -71,7 +71,7 @@ def chat(key: str, model: str, messages: list[dict], *, tools: list[str] | None 
                       data=json.dumps(body), timeout=timeout, stream=stream)
     if r.status_code >= 400:
         text = r.text
-        if r.status_code in (402, 429) and "budget" in text.lower():
+        if "budget_exceeded" in text or (r.status_code in (402, 429) and "budget" in text.lower()):
             raise BudgetExceeded(text[:300])
         raise RuntimeError(f"Otari {r.status_code}: {text[:400]}")
     if stream:
