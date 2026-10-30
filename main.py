@@ -172,6 +172,23 @@ def cmd_run() -> None:
         if rows:
             msgs.append("🆕 新着案件\n\n" + "\n\n".join(fmt_row(r) for r in rows))
             shown = {r["key"] for r in rows}
+
+        # 1b) 注目キーワード（セキュリティ系など）を含む新着は、スコアや賞金に関係なく知らせる
+        if config.WATCH_KEYWORDS:
+            rows = con.execute(
+                f"SELECT * FROM bounties WHERE key IN ({q}) AND ignored=0",
+                new_keys).fetchall()
+            hits = []
+            for r in rows:
+                text = " ".join(str(r[c] or "") for c in
+                                ("title", "sponsor", "category", "note")).lower()
+                words = [w for w in config.WATCH_KEYWORDS if w in text]
+                if words and r["key"] not in shown:
+                    hits.append((r, words))
+            if hits:
+                msgs.append("🛡 注目キーワードの新着\n\n" + "\n\n".join(
+                    f"{fmt_row(r)}\n  一致: {', '.join(w)}" for r, w in hits[:5]))
+                shown |= {r["key"] for r, _ in hits[:5]}
         con.execute(f"UPDATE bounties SET notified_new=1 WHERE key IN ({q})",
                     new_keys)
 

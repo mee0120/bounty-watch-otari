@@ -1,61 +1,81 @@
-> **English:** Bounty Watch collects open hackathons, bounties and grants from Devpost, DoraHacks, Superteam, Solana Hackathons, AKINDO and GitHub, scores them, and sends the best ones to LINE or Telegram. It also drafts a weekly X thread of open listings (`python3 main.py thread print`). The rest of this README is in Japanese.
->
-> **Otari AI analyst (MozFest Devs Wilding):** see [OTARI.md](OTARI.md) for the per-user AI analyst built on the Otari gateway with open-weight models.
+# Bounty Watch
 
-# バウンティ監視Bot（第1段階）
+Bounty Watch collects open hackathons, bounties and grants from several platforms,
+scores them, and sends only the ones worth a look to LINE (or Telegram). It runs on
+a small VPS with cron and keeps everything in one SQLite file.
 
-Superteam Earn と GitHub上の懸賞金付きIssue（Algora系）を定期的に集め、
-狙い目の案件だけをLINEに通知します。
+> **Otari AI analyst (MozFest Devs Wilding):** the `otari-devs-wilding` branch adds a
+> per-user AI analyst built on the Otari gateway with open-weight models.
+> See [OTARI.md](OTARI.md).
 
-## 通知の種類
+## Sources
 
-| 種類 | タイミング | 内容 |
+| Source | What is collected |
+|---|---|
+| Superteam Earn | bounties and projects open to the configured regions (global + Japan by default) |
+| Superteam grants | grants open to the configured regions |
+| GitHub | issues with a bounty label (Algora style) and no assignee |
+| DoraHacks | running online hackathons |
+| Solana Hackathons | official hackathons on hackathons.solana.com |
+| Devpost | open and upcoming online hackathons |
+| AKINDO | WaveHacks |
+
+## Notifications
+
+| Type | When | What |
 |---|---|---|
-| 🆕 新着 | 30分ごと | 新しく出た案件のうち、スコア50以上のもの |
-| ⏰ 締切間近 | 30分ごと | 締切72時間以内・提出10件以下・反響審査でないもの（1案件1回まで） |
-| 📋 日次まとめ | 毎朝8時 | 公開中の案件をスコア順に上位8件 |
+| 🆕 New | every 30 min | new listings with a score of 50 or more |
+| 🛡 Watched keywords | every 30 min | new listings whose title, sponsor or notes contain a watched word (security, privacy, ...), whatever their score |
+| ⏰ Closing soon | every 30 min | closes within 72 hours, 10 or fewer submissions, not judged on social engagement (once per listing) |
+| 📋 Daily digest | every morning | top open listings by score |
+| 🔌 New source | once | when a new source is added, its top 5 listings |
 
-## スコアの考え方（0〜100）
+## Score (0 to 100)
 
-- 基本点：`総賞金 ÷ max(提出数+1, 入賞枠)` を対数で点数化（$100→40点、$1,000→60点、$10,000→80点）
-- 開発・リサーチ案件は +15、コンテンツ案件は −5
-- Xの反響で審査されそうな案件（thread / tweet / meme など）は −30
-- 締切24時間未満は −15
-- ハッカソンは提出数が締切まで隠れるため「登録者数×0.4（Solana公式は×0.5）」を推定競合数として使い、入賞3枠と仮定。−5
-- フィードバック／テストネット系は +10、学生限定・地域限定の可能性があるものは −20
-- 助成金は審査制なので最大額のみで点数化（$1,000→40点、$10,000→60点）
-- 新しく追加した監視先は、初回だけ「🔌 監視先を追加」として上位5件をまとめて通知します
-- GitHubの案件は締切がないため、コメント数（着手宣言の数）を提出数の代わりに使います
+- Base: `total prize / max(submissions + 1, winner slots)` on a log scale
+  ($100 → 40, $1,000 → 60, $10,000 → 80)
+- Development and research tasks +15, content tasks −5
+- Listings likely judged on X engagement (thread, tweet, meme, ...) −30
+- Less than 24 hours left −15
+- Hackathons hide their submission count until the deadline, so
+  `registrations × 0.4` (× 0.5 for Solana's official hackathons) is used as the
+  estimated number of competitors, with 3 winner slots assumed, −5
+- Feedback and testnet tasks +10; possibly student-only or region-only −20
+- Grants are reviewed, so only the maximum amount counts ($1,000 → 40, $10,000 → 60)
+- GitHub bounties have no deadline, so the number of comments (people claiming the
+  issue) stands in for the submission count
 
-## 設置手順（VPS / Ubuntu 24.04）
+## Commands
 
-PowerShellからフォルダごとアップロード:
-
-```powershell
-scp -r .\bounty_watch root@<VPSのIP>:/root/
+```bash
+python3 main.py run            # collect, store, notify (run from cron)
+python3 main.py digest         # daily digest
+python3 main.py list           # print open listings by score
+python3 main.py ignore <url|key|title words>   # hide a listing
+python3 main.py thread print   # print a weekly X thread draft of open listings
+python3 main.py thread         # send the draft to Telegram and mark the picks as used
+python3 main.py test-notify    # send a test message to LINE
+# Otari branch only:
+python3 main.py ai [user]      # AI analysis of new listings for each user
+python3 main.py ai-one <url|key|title> [user]
+python3 main.py ai-log
 ```
 
-VPS上で:
+## Setup (VPS, Ubuntu 24.04)
 
 ```bash
 cd /root/bounty_watch
 python3 -m venv venv
 ./venv/bin/pip install -r requirements.txt
 cp .env.example .env
-nano .env        # LINEのトークンと送信先を入れる（他のBotと同じ値でOK）
+nano .env        # LINE token and destination; optional GITHUB_TOKEN, Telegram, Otari keys
 
-./venv/bin/python main.py test-notify   # LINEにテスト通知が届くか
-./venv/bin/python main.py run           # 初回（既存案件を登録するだけで通知はしない）
-./venv/bin/python main.py list          # 取得できた案件をスコア順に表示
+./venv/bin/python main.py test-notify   # a test message should arrive on LINE
+./venv/bin/python main.py run           # first run: stores existing listings without notifying
+./venv/bin/python main.py list          # listings by score
 ```
 
-`list` で Superteam と GitHub の両方の案件が表示されれば成功です。
-
-### 定期実行（cron）
-
-```bash
-crontab -e
-```
+### Cron
 
 ```
 CRON_TZ=Asia/Tokyo
@@ -63,27 +83,38 @@ CRON_TZ=Asia/Tokyo
 0 8 * * *    cd /root/bounty_watch && ./venv/bin/python main.py digest >> run.log 2>&1
 ```
 
-## 困ったとき
+## Settings (`.env`)
 
-- **Superteamの取得が403になる**：サイト側のボット対策の可能性があります。`run.log` のエラーを共有してください
-- **ソースが3回連続で失敗**：LINEにエラー通知が1回だけ届きます
-- **通知が多すぎる／少なすぎる**：`.env` の `NOTIFY_MIN_SCORE` を上げ下げしてください
+| Name | Default | Meaning |
+|---|---|---|
+| `NOTIFY_MIN_SCORE` | 50 | minimum score for the 🆕 notification |
+| `MIN_REWARD_USD` | 100 | listings below this are ignored |
+| `DIGEST_TOP_N` | 8 | listings in the daily digest |
+| `WATCH_KEYWORDS` | security, privacy, cyber, phishing, scam, fraud, vulnerab, secret | words that always trigger 🛡 (comma-separated, empty to turn off) |
+| `X_EXCLUDE` | (empty) | words that keep a listing out of the X thread, e.g. events you enter yourself |
 
-## ファイル構成
+## Troubleshooting
+
+- **A source returns 403**: probably the site's bot protection; check `run.log`.
+- **A source fails 3 times in a row**: one error message is sent to LINE.
+- **Too many or too few notifications**: raise or lower `NOTIFY_MIN_SCORE`.
+
+## Files
 
 ```
-main.py            実行の入口（run / digest / list / test-notify）
-config.py          設定（.env を読み込む）
-scoring.py         スコア計算
-db.py              SQLite保存（重複通知防止・提出数の推移記録）
-notifier.py        LINE通知
-sources/
-  superteam.py        Superteam Earn（日本から参加可能な案件のみ）
-  superteam_grants.py Superteam の助成金（Global / Japan のみ）
-  github_bounty.py    GitHubの懸賞金付きIssue
-  dorahacks.py        DoraHacks の開催中ハッカソン（オンラインのみ）
-  solana_hackathons.py hackathons.solana.com（Solana公式ハッカソン）
+main.py            entry point (commands above)
+config.py          settings, read from .env
+scoring.py         score
+db.py              SQLite: de-duplication and submission history
+notifier.py        LINE
+xthread.py         X thread draft (built from stored data, no AI, never posts)
+sources/           one module per platform; fetch() returns a list of Bounty
+ai/                Otari analyst (otari-devs-wilding branch)
 ```
 
-ソースを増やすときは `sources/` に `fetch()` が `Bounty` のリストを返すファイルを足し、
-`main.py` の `collect()` に1行追加します。
+To add a source, put a module with `fetch()` in `sources/` and add one line to
+`collect()` in `main.py`.
+
+## License
+
+MIT, see [LICENSE](LICENSE).

@@ -50,6 +50,10 @@ GITHUB_EXCLUDE_REPOS = [
 
 # --- 通知の条件 ---
 NOTIFY_MIN_SCORE = float(os.getenv("NOTIFY_MIN_SCORE", "50"))   # 新着通知のしきい値
+# スコアに関係なく知らせる注目キーワード（小文字・カンマ区切り。空にすると無効）
+WATCH_KEYWORDS = [w.strip().lower() for w in os.getenv(
+    "WATCH_KEYWORDS", "security,privacy,cyber,phishing,scam,fraud,vulnerab,secret"
+).split(",") if w.strip()]
 MIN_REWARD_USD = float(os.getenv("MIN_REWARD_USD", "100"))       # これ未満は無視
 DIGEST_TOP_N = int(os.getenv("DIGEST_TOP_N", "8"))               # 日次まとめの件数
 # 「締切が近いのに提出が少ない」アラート
