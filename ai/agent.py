@@ -143,7 +143,7 @@ def analyse(user: dict, key: str, row) -> tuple[dict, otari.Result]:
         tools=["otari_web_fetch", "otari_web_search", "otari_code_execution"],
         mcp_servers=mcp_servers,
         guardrails=[{"profile": "prompt-injection", "mode": "monitor"}],
-        max_tokens=1500, max_tool_iterations=8, stream=True, on_tool=_tool_log,
+        max_tokens=3000, max_tool_iterations=8, stream=True, on_tool=_tool_log,
         tags=["stage=analyst", f"user={user['id']}"])
     try:
         report = otari.extract_json(res.content)

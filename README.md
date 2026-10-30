@@ -1,3 +1,5 @@
+> **English:** Bounty Watch collects open hackathons, bounties and grants from Devpost, DoraHacks, Superteam, Solana Hackathons, AKINDO and GitHub, scores them, and sends the best ones to LINE or Telegram. It also drafts a weekly X thread of open listings (`python3 main.py thread print`). The rest of this README is in Japanese.
+>
 > **Otari AI analyst (MozFest Devs Wilding):** see [OTARI.md](OTARI.md) for the per-user AI analyst built on the Otari gateway with open-weight models.
 
 # バウンティ監視Bot（第1段階）

@@ -1,5 +1,7 @@
 # AI analyst for the bounty watcher, built on Otari
 
+**Demo video (3:21):** https://youtu.be/ZhYsZGAnpRM
+
 The watcher already collects new hackathons, bounties and grants from Devpost,
 DoraHacks, Superteam, Solana Hackathons, AKINDO and GitHub, scores them and posts
 the best ones to LINE. A score is not a decision, though: to decide whether to
@@ -20,7 +22,7 @@ new listing ──► triage (gpt-oss-20b) ──no──► skipped, reason log
                      │                                            web fetch / web search
                      │                                            code execution (hours left, expected value)
                      ▼
-     JSON report in the user's language ──► LINE (user A, Japanese) / stdout (user B, English)
+     JSON report in the user's language ──► LINE (user A, Japanese) / Telegram (user B, English)
 ```
 
 ## How each Otari feature is used
@@ -52,7 +54,7 @@ A plain web search could not have produced the last two lines.
 `ai/users.example.json` (copy to `ai/users.json`):
 
 - **user-a**: crypto and web3 events, reports in Japanese, delivered to LINE
-- **user-b**: AI agents and developer tools, reports in English, printed to stdout
+- **user-b**: AI agents and developer tools, reports in English, delivered to Telegram
 
 The watcher logic is the same for both; only the profile, the language, the key
 and therefore the budget differ. The same code can watch job posts or grant calls

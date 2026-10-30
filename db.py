@@ -29,7 +29,7 @@ def _now() -> str:
 
 
 def connect() -> sqlite3.Connection:
-    con = sqlite3.connect(DB_PATH)
+    con = sqlite3.connect(DB_PATH, timeout=60)  # wait while the cron run writes
     con.row_factory = sqlite3.Row
     con.executescript(SCHEMA)
     # 後から追加した列（既存DBにも足す）

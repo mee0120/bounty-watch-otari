@@ -10,6 +10,7 @@
   python3 main.py ai-one <URL|キー> [user-id]  # 1件だけAI分析（デモ用）
   python3 main.py ai-log       # これまでのAI分析とコストを表示
 """
+import os
 import sys
 import traceback
 from datetime import datetime, timedelta, timezone
@@ -316,11 +317,25 @@ def cmd_ai_log() -> None:
     print(f"total ${total:.4f}")
 
 
+def cmd_thread() -> None:
+    """X thread draft. `thread` sends it to Telegram; `thread print` only prints
+    (and does not mark the picks as used)."""
+    import xthread
+    con = db.connect()
+    dry = len(sys.argv) > 2 and sys.argv[2] == "print"
+    text = xthread.draft(con, n=int(os.getenv("X_PICKS", "5")), mark=not dry)
+    if dry:
+        print(text)
+    else:
+        from ai import telegram
+        telegram.send(text)
+
+
 def main() -> None:
     cmd = sys.argv[1] if len(sys.argv) > 1 else "run"
     commands = {"run": cmd_run, "digest": cmd_digest, "list": cmd_list,
                 "ignore": cmd_ignore, "ai": cmd_ai, "ai-one": cmd_ai_one,
-                "ai-log": cmd_ai_log,
+                "ai-log": cmd_ai_log, "thread": cmd_thread,
                 "test-notify": lambda: notifier.send("バウンティ監視Bot: 通知テストです")}
     if cmd not in commands:
         print(__doc__)
